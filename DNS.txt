@@ -1,0 +1,111 @@
+#DNS SERVER
+
+#named.conf.options
+
+options {
+	directory "/var/cache/bind";
+	recursion yes;
+	allow-recursion { 192.168.8.0/24; 127.0.0.1; };
+	listen-on { any; };
+	allow-query { 192.168.8.0/24; 127.0.0.1; };
+	dnssec-validation auto;
+	forwarders { 8.8.8.8; 8.8.4.4; };
+};
+
+
+#named.conf.local
+
+zone "csne.vcct.com" {
+	type primary;
+	file "/etc/bind/db.csne.vcct.com";
+	allow-transfer { none; };
+};
+
+zone "8.168.192.in-addr.arpa" {
+	type primary;
+	file "/etc/bind/db.8.168.192";
+	allow-transfer { none; };
+};
+
+#forward file
+
+#db.csne.vcct.com
+
+$TTL	604800
+@		IN		SOA		ns.csne.vcct.com. admin.csne.vcct.com. (
+						20250905		;	serial
+						3600			;	refresh
+						1800			;	retry
+						604800			;	expire
+						86400 )			;	minimum
+
+;name servers - NS records
+@	IN			NS	ns.csne.vcct.com.
+
+ns.csne.vcct.com.		IN	A	192.168.8.100
+csne.vcct.com.			IN	A	192.168.8.132
+server.csne.vcct.com	IN	A	192.168.8.135
+
+#reverse file
+
+#db.8.168.192
+
+$TTL	604800
+@		IN		SOA		ns.csne.vcct.com.	admin.csne.vcct.com. (
+						20250905		;	serial
+						3600			;	refresh
+						1800			;	retry
+						604800			;	expire
+						86400 )			;	minimum
+; name servers - NS records
+		IN		NS	ns.csne.vcct.com.
+		
+100		IN		PTR		ns.csne.vcct.com.
+132		IN		PTR		csne.vcct.com.
+135		IN		PTR		server.csne.vcct.com.
+
+
+#Docker file
+
+FROM ubuntu:22.04
+RUN apt-get update && apt-get install -y bind9 bind9utils dnsutils nano && rm -rf /var/lib/apt/lists/*
+COPY named.conf.local /etc/bind/named.conf.local
+COPY named.conf.options /etc/bind/named.conf.options
+COPY db.csne.vcct.com /etc/bind/db.csne.vcct.com
+COPY db.8.168.192 /etc/bind/db.8.168.192
+EXPOSE 53/udp 53/tcp
+CMD ["named", "-g"]
+
+
+#CMD ["named", "-g"]
+#CMD → Defines the default process that runs when the container starts.
+#named → This is the BIND9 daemon.
+#-g → Runs it in the foreground (not as a background service).
+#Docker best practice: processes should run in the foreground so Docker can monitor them.
+
+#Docker build
+
+docker build --network=host -t my-dns-server .
+
+#Docker run
+
+docker run -d --name dns-server --network host my-dns-server
+
+#Docker start
+
+docker start dns-server
+
+#commands that usefull
+
+docker exec -it dns-server /bin/bash
+apt-get update && apt-get install -y nano
+docker restart dns-server
+
+doker ps -a
+docker rm -f dns-server
+docker images
+docker rmi my-dns-server
+
+# check the DNS resolved succusfully.
+
+dig @192.168.8.100 csne.vcct.com
