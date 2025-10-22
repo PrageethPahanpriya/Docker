@@ -1,0 +1,37 @@
+#usefull commands
+
+1. Stop running containers
+docker stop $(docker ps -aq)
+
+2. Remove all containers
+docker rm $(docker ps -aq)
+
+3. Remove docker images
+docker rmi -f prageeeth/squid-proxy:v1.0
+docker rmi -f prageeeth/dhcp-server:v1.0
+docker rmi -f prageeeth/dns-server:v1.0
+
+4. Pull images from dockerHub
+docker pull prageeeth/dhcp-server:v1.0
+docker pull prageeeth/squid-proxy:v1.0
+docker pull prageeeth/dns-server:v1.0
+
+5. Remove all things(cache and stoped containers)
+docker system prune -a --volumes
+
+6. Run docker.compse.yml file
+docker compose up -d
+
+7. Jenkins
+docker run -d -p 8080:8080 -p 50000:50000 --name jenkins -v jenkins_home:/var/jenkins_home jenkins/jenkins:lts
+
+8. Get jenkins admin pw
+docker exec jenkins cat /var/jenkins_home/secrets/initialAdminPassword
+
+9. How to push docker image to docker hub
+	1. tag
+		docker tag [image id] [docker_username]/[repository]:[tag]
+		docker tag 8e6f8b11f82 prageeeth/jenkins:lts
+	2. push
+		docker push [repository]:[tag]
+		docker push prageeeth/jenkins:lts
